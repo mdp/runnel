@@ -19,11 +19,13 @@ Autossh - you really should already be using this.
 
     gem install runnel
 
-Create the directory for you runnel config
+Now let runnel set itself up by simply running it:
 
-    mkdir -p ~/.runnel ~/.runnel/pids
+    runnel
 
-Build your tunnels.yml file and place it in '~/.runnel'
+Edit your tunnels.yml file, found in '~/.runnel'
+
+Here's the example file you'll have after setup:
 
     ----
     :socks_proxy:
@@ -54,4 +56,4 @@ You can also kill them the same way
 And lastly
 
     # Show the tunnels
-    runnel list
+    runnel
