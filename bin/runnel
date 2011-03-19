@@ -2,7 +2,7 @@
 require 'rubygems'
 require 'yaml'
 
-help = <<HELP
+HELP = <<TXT
 Runnel is a easy way to manage your ssh tunnels. It relies on autossh
 
 Basic Command Line Usage:
@@ -15,23 +15,45 @@ Basic Command Line Usage:
   Configuration is read from '~/.runnel/config'
   PID's are stored in ~/.runnel/pids/
 
-HELP
+TXT
+
+TCONF_EXAMPLE = <<YAML
+---
+:socks_proxy:
+  :name: My socks proxy for secure browsing on public WiFi
+  :mport: 44488 #The autossh monitor port
+  :command: -NfD 8080 mysecurebox.net
+:mysql_proxy:
+  :name: mySQL proxy for work
+  :mport: 44490
+  :command: -NfL 3306:localhost:3306 mysqlbox.org
+
+YAML
 
 class Runnel
-  PIDS_DIR  = ENV['HOME']+"/.runnel/pids"
+  RUNNEL_DIR  = ENV['HOME']+"/.runnel"
+  PIDS_DIR  = "#{RUNNEL_DIR}/pids"
   PIDS_FILES  = "#{PIDS_DIR}/*"
+  TUNNEL_CONFIG = "#{RUNNEL_DIR}/tunnels.yml"
 
-  class Config
-    CONFIG = YAML.load_file(ENV['HOME']+"/.runnel/tunnels.yml")
 
-    def self.find_by_tunnel_id(tid)
-      CONFIG[tid.to_sym]
+  def self.config
+    @config = YAML.load_file(TUNNEL_CONFIG)
+  end
+
+  def self.setup
+    puts "mkdir -p #{RUNNEL_DIR} #{PIDS_DIR}"
+    `mkdir -p #{RUNNEL_DIR} #{PIDS_DIR}`
+    unless File.exists?(TUNNEL_CONFIG)
+      puts "Populating an example config"
+      File.open(TUNNEL_CONFIG, 'w').puts(TCONF_EXAMPLE)
     end
+    puts "Now just update #{TUNNEL_CONFIG}"
   end
 
   def self.all
     list = []
-    Config::CONFIG.each_pair do |k,v|
+    config.each_pair do |k,v|
       list << self.new(k, v)
     end
     list
@@ -59,7 +81,7 @@ class Runnel
   end
 
   def self.create_from_tunnel_id(tid)
-    self.new(tid, Config.find_by_tunnel_id(tid))
+    self.new(tid, config[tid.to_sym])
   end
 
   attr_reader :id, :config
@@ -123,10 +145,8 @@ class Runnel
 end
 
 case ARGV[0]
-when "list"
-  Runnel.all.each do |r|
-    puts r.pp_description
-  end
+when "setup"
+  Runnel.setup
 when "kill"
   Runnel.kill(ARGV[1])
 when "kill_all"
@@ -135,5 +155,16 @@ when "start"
   Runnel.start(ARGV[1])
 when "start_all"
   Runnel.start_all
+when "help"
+  puts HELP
+else # List tunnels
+  if File.exists?(Runnel::TUNNEL_CONFIG)
+    Runnel.all.each do |r|
+      puts r.pp_description
+    end
+  else
+    puts "Looks like this is your first time, lets set everything up."
+    Runnel.setup
+  end
 end
 
