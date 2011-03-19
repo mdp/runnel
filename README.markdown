@@ -42,16 +42,16 @@ Then use runnel to start the tunnels
     # Start one tunnel
     runnel start socks_proxy
 
-    # Start them all
-    runnel start_all
+    # Start all tunnels
+    runnel start
 
 You can also kill them the same way
 
     # Kill one tunnel
     runnel kill socks_proxy
 
-    # Kill them all
-    runnel kill_all
+    # Kill all tunnels
+    runnel kill
 
 And lastly
 
