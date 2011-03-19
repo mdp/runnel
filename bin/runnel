@@ -1,0 +1,139 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'yaml'
+
+help = <<HELP
+Runnel is a easy way to manage your ssh tunnels. It relies on autossh
+
+Basic Command Line Usage:
+  runnel list_running
+  runnel start <tunnel>
+  runnel start_all
+  runnel kill <tunnel>
+  runnel kill_all
+
+  Configuration is read from '~/.runnel/config'
+  PID's are stored in ~/.runnel/pids/
+
+HELP
+
+class Runnel
+  PIDS_DIR  = ENV['HOME']+"/.runnel/pids"
+  PIDS_FILES  = "#{PIDS_DIR}/*"
+
+  class Config
+    CONFIG = YAML.load_file(ENV['HOME']+"/.runnel/tunnels.yml")
+
+    def self.find_by_tunnel_id(tid)
+      CONFIG[tid.to_sym]
+    end
+  end
+
+  def self.all
+    list = []
+    Config::CONFIG.each_pair do |k,v|
+      list << self.new(k, v)
+    end
+    list
+  end
+
+  def self.kill(tid)
+    create_from_tunnel_id(tid).kill
+  end
+
+  def self.start(tid)
+    tunnel = create_from_tunnel_id(tid)
+    tunnel.start
+  end
+
+  def self.start_all
+    self.all.each do |t|
+      t.start unless t.running?
+    end
+  end
+
+  def self.kill_all
+    self.all.each do |t|
+      t.kill if t.running?
+    end
+  end
+
+  def self.create_from_tunnel_id(tid)
+    self.new(tid, Config.find_by_tunnel_id(tid))
+  end
+
+  attr_reader :id, :config
+  alias_method :conf, :config
+
+  def initialize(id, config)
+    @id = id
+    @config = config
+  end
+
+  def pp_description
+    txt = "#{id} - #{conf[:name]}"
+    txt += " (Running: #{pid})" if running?
+    running? ? green(txt) : red(txt)
+  end
+
+  def running?
+    if File.exists?(pid_file)
+      if `ps #{pid} | grep autossh`.length == 0
+        File.delete(file)
+        false
+      else
+        true
+      end
+    end
+  end
+
+  def start
+    puts "Starting #{conf[:name]}"
+    puts "AUTOSSH_PIDFILE=#{pid_file} autossh -M #{conf[:mport]} #{conf[:command]}"
+    ENV['AUTOSSH_PIDFILE'] = pid_file
+    `autossh -M #{conf[:mport]} #{conf[:command]}`
+  end
+
+  def kill
+    if running?
+      `kill #{pid}`
+    else
+      puts "Unable to find a running #{conf[:name]}"
+    end
+  end
+
+  private
+
+  def pid_file
+    "#{PIDS_DIR}/#{id}"
+  end
+
+  def pid
+    File.read(pid_file).chomp
+  end
+
+  def red(txt)
+    "\033[31m#{txt}\033[0m"
+  end
+
+  def green(txt)
+    "\033[32m#{txt}\033[0m"
+  end
+
+end
+
+case ARGV[0]
+when "list"
+  Runnel.all.each do |r|
+    puts r.pp_description
+  end
+when "kill"
+  Runnel.kill(ARGV[1])
+when "kill_all"
+  Runnel.kill_all
+when "start"
+  Runnel.start(ARGV[1])
+when "start_all"
+  Runnel.start_all
+end
+
