@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = 'runnel'
-  s.version = '0.0.3'
+  s.version = '0.0.4'
   s.summary = 'An autossh tunnel manager, written in Ruby'
 
   s.author   = 'Mark Percival'

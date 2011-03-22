@@ -55,5 +55,5 @@ You can also kill them the same way
 
 And lastly
 
-    # Show the tunnels
+    # Show the tunnels, active and inactive
     runnel

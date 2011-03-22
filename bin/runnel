@@ -6,13 +6,13 @@ HELP = <<TXT
 Runnel is a easy way to manage your ssh tunnels. It relies on autossh
 
 Basic Command Line Usage:
-  runnel list_running
+  runnel
   runnel start <tunnel>
-  runnel start_all
+  runnel start
   runnel kill <tunnel>
-  runnel kill_all
+  runnel kill
 
-  Configuration is read from '~/.runnel/config'
+  Configuration is read from '~/.runnel/tunnels.yml'
   PID's are stored in ~/.runnel/pids/
 
 TXT
@@ -144,24 +144,7 @@ class Runnel
 
 end
 
-case ARGV[0]
-when "setup"
-  Runnel.setup
-when "kill"
-  if ARGV[1]
-    Runnel.kill(ARGV[1])
-  else
-    Runnel.kill_all
-  end
-when "start"
-  if ARGV[1]
-    Runnel.start(ARGV[1])
-  else
-    Runnel.start_all
-  end
-when "help"
-  puts HELP
-else # List tunnels
+unless ARGV[0]
   if File.exists?(Runnel::TUNNEL_CONFIG)
     Runnel.all.each do |r|
       puts r.pp_description
@@ -170,5 +153,26 @@ else # List tunnels
     puts "Looks like this is your first time, lets set everything up."
     Runnel.setup
   end
+else
+  case ARGV[0]
+  when "setup"
+    Runnel.setup
+  when "kill", "stop"
+    if ARGV[1]
+      Runnel.kill(ARGV[1])
+    else
+      Runnel.kill_all
+    end
+  when "start"
+    if ARGV[1]
+      Runnel.start(ARGV[1])
+    else
+      Runnel.start_all
+    end
+  when "help"
+    puts HELP
+  else
+    puts "Unknown command \"#{ARGV[0]}\""
+    puts HELP
+  end
 end
-
