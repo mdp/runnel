@@ -101,7 +101,7 @@ class Runnel
   def running?
     if File.exists?(pid_file)
       if `ps #{pid} | grep autossh`.length == 0
-        File.delete(file)
+        File.delete(pid_file)
         false
       else
         true
